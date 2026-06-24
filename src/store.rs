@@ -16,6 +16,8 @@ pub trait Store: Send + Sync {
     fn save(&self, code: String, url: String);
     /// Resolve a code to its URL, counting a hit. Returns None if unknown.
     fn resolve(&self, code: &str) -> Option<String>;
+    /// Fetch a link's metadata without counting a hit.
+    fn get(&self, code: &str) -> Option<Link>;
 }
 
 /// In-memory Store backed by a read/write-locked map.
@@ -43,5 +45,9 @@ impl Store for MemoryStore {
         let link = links.get_mut(code)?;
         link.hits += 1;
         Some(link.url.clone())
+    }
+
+    fn get(&self, code: &str) -> Option<Link> {
+        self.links.read().unwrap().get(code).cloned()
     }
 }

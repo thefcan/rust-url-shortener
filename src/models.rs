@@ -11,3 +11,10 @@ pub struct ShortenResponse {
     pub code: String,
     pub short_url: String,
 }
+
+#[derive(Serialize)]
+pub struct StatsResponse {
+    pub code: String,
+    pub url: String,
+    pub hits: u64,
+}

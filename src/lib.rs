@@ -1,4 +1,5 @@
 //! A small, production-style URL shortener built with Axum.
+pub mod error;
 pub mod models;
 pub mod routes;
 pub mod store;
@@ -8,7 +9,7 @@ use axum::{
     Router,
 };
 
-use crate::routes::{redirect, shorten, AppState};
+use crate::routes::{redirect, shorten, stats, AppState};
 
 /// Build the application router over any Store implementation. Kept separate
 /// from `main` so integration tests can exercise it without binding a socket.
@@ -16,5 +17,6 @@ pub fn app(state: AppState) -> Router {
     Router::new()
         .route("/shorten", post(shorten))
         .route("/{code}", get(redirect))
+        .route("/api/{code}", get(stats))
         .with_state(state)
 }
