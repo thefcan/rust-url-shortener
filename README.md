@@ -6,7 +6,7 @@ async (Tokio), typed errors, a Store trait, tests, Docker and CI.
 ## Status (built in phases)
 - [x] **Phase 1 — Shorten & redirect** (in-memory Store)
 - [x] **Phase 2 — Typed errors, URL validation, stats**
-- [ ] Phase 3 — Tests, clippy & rustfmt clean
+- [x] **Phase 3 — Integration tests, clippy & rustfmt clean**
 - [ ] Phase 4 — Tracing + graceful shutdown
 - [ ] Phase 5 — Docker + CI
 
@@ -32,6 +32,15 @@ curl -si localhost:8080/<code>                       # -> 308 redirect
 curl -s  localhost:8080/api/<code>                   # -> {"code","url","hits"}
 ```
 
+## Tests, lint & format
+```bash
+cargo test                       # in-process integration tests (tower oneshot)
+cargo clippy --all-targets -- -D warnings
+cargo fmt --check
+```
+The router is built by `app()` so tests drive the full request/response path
+without binding a socket.
+
 ## Architecture
 ```
 src/
@@ -41,4 +50,5 @@ src/
 ├── store.rs    # Store trait + in-memory implementation
 ├── models.rs   # serde request/response types
 └── error.rs    # typed AppError -> HTTP response
+tests/api.rs    # integration tests
 ```
