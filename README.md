@@ -1,15 +1,17 @@
 # rust-url-shortener
 
+![CI](https://github.com/thefcan/rust-url-shortener/actions/workflows/ci.yml/badge.svg)
+
 A small, production-style **URL shortener** built in **Rust** with **Axum** —
 async (Tokio), typed errors, structured logging, a Store trait, tests, Docker
 and CI.
 
-## Status (built in phases)
+## Status — all phases complete
 - [x] **Phase 1 — Shorten & redirect** (in-memory Store)
 - [x] **Phase 2 — Typed errors, URL validation, stats**
 - [x] **Phase 3 — Integration tests, clippy & rustfmt clean**
 - [x] **Phase 4 — Tracing + graceful shutdown**
-- [ ] Phase 5 — Docker + CI
+- [x] **Phase 5 — Docker + CI**
 
 ## API
 | Method | Path          | Description                                  |
@@ -32,7 +34,15 @@ curl -si localhost:8080/<code>     # 308 redirect
 curl -s  localhost:8080/api/<code> # {"code","url","hits"}
 ```
 Each request is logged with method, path, status and latency (`tower-http`
-TraceLayer + `tracing`). The server shuts down gracefully on Ctrl-C / SIGTERM.
+TraceLayer); the server shuts down gracefully on Ctrl-C / SIGTERM.
+
+## Docker
+A multi-stage build produces a small image on a distroless, non-root base:
+```bash
+docker build -t rust-url-shortener .
+docker run --rm -p 8080:8080 rust-url-shortener
+# or: docker compose up --build
+```
 
 ## Tests, lint & format
 ```bash
@@ -40,6 +50,7 @@ cargo test                                    # in-process integration tests (to
 cargo clippy --all-targets -- -D warnings
 cargo fmt --check
 ```
+CI runs all of the above plus a release build on every push (GitHub Actions).
 
 ## Architecture
 ```
