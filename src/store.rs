@@ -51,3 +51,83 @@ impl Store for MemoryStore {
         self.links.read().unwrap().get(code).cloned()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn save_then_get_returns_link_with_zero_hits() {
+        let store = MemoryStore::new();
+        store.save("abc".into(), "https://example.com/".into());
+
+        let link = store.get("abc").expect("saved link should exist");
+        assert_eq!(link.url, "https://example.com/");
+        assert_eq!(link.hits, 0);
+    }
+
+    #[test]
+    fn get_is_none_for_unknown_code() {
+        let store = MemoryStore::new();
+        assert!(store.get("missing").is_none());
+    }
+
+    #[test]
+    fn resolve_returns_url_and_counts_each_hit() {
+        let store = MemoryStore::new();
+        store.save("abc".into(), "https://example.com/".into());
+
+        assert_eq!(
+            store.resolve("abc").as_deref(),
+            Some("https://example.com/")
+        );
+        assert_eq!(
+            store.resolve("abc").as_deref(),
+            Some("https://example.com/")
+        );
+
+        assert_eq!(store.get("abc").unwrap().hits, 2);
+    }
+
+    #[test]
+    fn resolve_is_none_for_unknown_code() {
+        let store = MemoryStore::new();
+        assert!(store.resolve("nope").is_none());
+    }
+
+    #[test]
+    fn get_does_not_count_a_hit() {
+        let store = MemoryStore::new();
+        store.save("abc".into(), "https://example.com/".into());
+
+        store.get("abc");
+        store.get("abc");
+
+        assert_eq!(store.get("abc").unwrap().hits, 0);
+    }
+
+    #[test]
+    fn save_overwrites_url_and_resets_hits() {
+        let store = MemoryStore::new();
+        store.save("abc".into(), "https://old.example/".into());
+        store.resolve("abc");
+
+        store.save("abc".into(), "https://new.example/".into());
+
+        let link = store.get("abc").unwrap();
+        assert_eq!(link.url, "https://new.example/");
+        assert_eq!(link.hits, 0);
+    }
+
+    #[test]
+    fn distinct_codes_track_hits_independently() {
+        let store = MemoryStore::new();
+        store.save("a".into(), "https://a.example/".into());
+        store.save("b".into(), "https://b.example/".into());
+
+        store.resolve("a");
+
+        assert_eq!(store.get("a").unwrap().hits, 1);
+        assert_eq!(store.get("b").unwrap().hits, 0);
+    }
+}
