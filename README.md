@@ -2,64 +2,90 @@
 
 ![CI](https://github.com/thefcan/rust-url-shortener/actions/workflows/ci.yml/badge.svg)
 
-A small, production-style **URL shortener** built in **Rust** with **Axum** —
-async (Tokio), typed errors, structured logging, a Store trait, tests, Docker
-and CI.
+A compact, production-oriented URL shortener implemented in Rust using
+Axum and Tokio. It emphasizes strong types for errors, structured logging,
+testable router construction, and a small, efficient Docker image for
+deployment.
 
-## Status — all phases complete
-- [x] **Phase 1 — Shorten & redirect** (in-memory Store)
-- [x] **Phase 2 — Typed errors, URL validation, stats**
-- [x] **Phase 3 — Integration tests, clippy & rustfmt clean**
-- [x] **Phase 4 — Tracing + graceful shutdown**
-- [x] **Phase 5 — Docker + CI**
+## Features
+- Shorten URLs and perform permanent redirects with hit counting
+- Typed application errors and JSON error responses
+- Pluggable `Store` trait (in-memory implementation included)
+- Structured request logging and graceful shutdown
+- CI with tests, clippy, and formatting checks
+- Docker multi-stage build for small runtime image
 
 ## API
-| Method | Path          | Description                                  |
-|--------|---------------|----------------------------------------------|
-| POST   | `/shorten`    | Body `{"url":"https://..."}` → `{code, short_url}`; rejects invalid URLs (400) |
-| GET    | `/{code}`     | 308 redirect to the original URL (counts a hit) |
-| GET    | `/api/{code}` | Link metadata + hit count (JSON)             |
+Method | Path | Description
+---|---|---
+POST `/shorten` | Accepts JSON `{ "url": "https://..." }` and returns `{ code, short_url }`. Returns 400 for invalid URLs.
+GET `/{code}` | Issues a 308 redirect to the original URL and increments the hit counter.
+GET `/api/{code}` | Returns link metadata and hit count as JSON.
 
-Errors are JSON (`{"error":"..."}`) with the right status via a typed `AppError`
-(`thiserror` → `IntoResponse`). URLs are validated with the `url` crate.
+Error responses use JSON like `{ "error": "..." }` with appropriate HTTP
+status codes. Errors are implemented via a typed `AppError` mapped to
+responses.
 
-## Run
+## Quick start
+Run locally with Cargo:
+
 ```bash
-cargo run                          # listening on http://0.0.0.0:8080
-RUST_LOG=debug cargo run           # verbose request logs
+cargo run
+# Server listens on http://0.0.0.0:8080 by default
 
+# Example: shorten a URL
 curl -s -X POST localhost:8080/shorten -H 'Content-Type: application/json' \
   -d '{"url":"https://github.com/thefcan"}'
-curl -si localhost:8080/<code>     # 308 redirect
-curl -s  localhost:8080/api/<code> # {"code","url","hits"}
+
+# Redirect
+curl -si localhost:8080/<code>
+
+# Fetch metadata
+curl -s localhost:8080/api/<code>
 ```
-Each request is logged with method, path, status and latency (`tower-http`
-TraceLayer); the server shuts down gracefully on Ctrl-C / SIGTERM.
+
+Run with more verbose logs:
+
+```bash
+RUST_LOG=debug cargo run
+```
 
 ## Docker
-A multi-stage build produces a small image on a distroless, non-root base:
+Build and run the production image:
+
 ```bash
 docker build -t rust-url-shortener .
 docker run --rm -p 8080:8080 rust-url-shortener
 # or: docker compose up --build
 ```
 
-## Tests, lint & format
+## Tests, linting & formatting
+
 ```bash
-cargo test                                    # in-process integration tests (tower oneshot)
+cargo test
 cargo clippy --all-targets -- -D warnings
 cargo fmt --check
 ```
-CI runs all of the above plus a release build on every push (GitHub Actions).
 
-## Architecture
+CI executes the above checks and a release build on each push.
+
+## Project layout
+
 ```
 src/
-├── main.rs     # server: tracing, TraceLayer, graceful shutdown
-├── lib.rs      # builds the Axum router (testable)
-├── routes.rs   # handlers: shorten / redirect / stats
-├── store.rs    # Store trait + in-memory implementation
-├── models.rs   # serde request/response types
-└── error.rs    # typed AppError -> HTTP response
+├── main.rs     # server bootstrap: tracing, TraceLayer, graceful shutdown
+├── lib.rs      # router construction (easy to test)
+├── routes.rs   # request handlers
+├── store.rs    # Store trait and in-memory store
+├── models.rs   # serde types for requests/responses
+└── error.rs    # AppError -> HTTP responses
 tests/api.rs    # integration tests
 ```
+
+## Contributing
+Contributions are welcome. Please open issues or PRs, keep changes small,
+and ensure tests, clippy and formatting checks pass.
+
+## License
+This project is provided under an open-source license. See the `LICENSE`
+file for details.
